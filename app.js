@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const xss = require('xss-clean');
 
+const User = require('./models/userModel');
 const userRouter = require('./routes/userRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errController');
@@ -46,6 +47,21 @@ app.use('/api/v1/users', userRouter);
 
 app.use('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+});
+const sequelize = require('./utils/database');
+
+const sync = async () => await sequelize.sync({ force: true });
+sync().then(() => {
+  User.create({
+    email: 'test@test.com',
+    password: '123456',
+    username: 'neo',
+  });
+  User.create({
+    email: 'test2@test.com',
+    password: '123456',
+    username: 'celeb_neo',
+  });
 });
 
 app.use(globalErrorHandler);

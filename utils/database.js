@@ -1,7 +1,17 @@
+require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
+const { DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD, DATABASE_HOST } =
+  process.env;
+
 const sequelize = new Sequelize(
-  'postgres://ssaqofax:yzzPtltAF978eWJ6caHMPKrzbKT6C81y@suleiman.db.elephantsql.com/ssaqofax'
+  DATABASE_NAME,
+  DATABASE_USER,
+  DATABASE_PASSWORD,
+  {
+    host: DATABASE_HOST,
+    dialect: 'postgres',
+  }
 );
 
 const testConnection = async () => {
