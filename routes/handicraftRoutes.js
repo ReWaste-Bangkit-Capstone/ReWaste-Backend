@@ -15,7 +15,11 @@ router
 router
   .route('/:id')
   .get(handicraftController.getHandicraft)
-  .patch()
+  .patch(
+    handicraftController.uploadHandicraftPhoto,
+    handicraftController.updateFile,
+    handicraftController.updateHandicraft
+  )
   .delete(
     handicraftController.deleteAssociatedFile,
     handicraftController.deleteHandicraft

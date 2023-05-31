@@ -29,7 +29,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // Body parser, reading data from body into req.body
-app.use(express.json({ limit: '10kb' }));
+app.use(express.json());
 
 // data sanitization against XSS
 app.use(xss());

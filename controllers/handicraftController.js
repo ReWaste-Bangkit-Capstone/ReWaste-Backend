@@ -139,6 +139,35 @@ exports.getAllHandicrafts = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.updateFile = catchAsync(async (req, res, next) => {
+  const { file } = req;
+  if (!file) return next();
+  const filename = `${uuidv4()}${path.extname(file.originalname)}`;
+
+  // Upload the file to Google Cloud Storage
+  const bucket = storage.bucket(bucketName);
+  const blob = bucket.file(filename);
+  const stream = blob.createWriteStream({
+    resumable: false,
+    metadata: {
+      contentType: file.mimetype,
+    },
+  });
+  stream.on('error', (err) => {
+    next(new AppError(err.message, 400));
+  });
+  stream.on('finish', async () => {
+    // Construct the URL for the uploaded file
+    const url = `https://storage.googleapis.com/${bucketName}/${filename}`;
+
+    // Update the handicraft record with the uploaded file URL
+    await Handicraft.findByPk(req.params.id);
+    req.body.photo_url = url;
+  });
+  stream.end(file.buffer);
+  next();
+});
+
 exports.deleteHandicraft = handlerFactory.deleteOne(Handicraft);
 exports.getHandicraft = handlerFactory.getOne(Handicraft);
 exports.updateHandicraft = handlerFactory.updateOne(Handicraft);
