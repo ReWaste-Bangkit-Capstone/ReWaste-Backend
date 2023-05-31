@@ -24,9 +24,8 @@ const upload = multer({
 exports.uploadHandicraftPhoto = upload.single('photo_url');
 
 exports.createHandicraft = catchAsync(async (req, res, next) => {
-  const { name, description, tags } = req.body;
+  const { name, description, tags, steps } = req.body;
   const { file } = req;
-
   // Generate a unique filename for the uploaded file
   const filename = `${uuidv4()}${path.extname(file.originalname)}`;
 
@@ -59,11 +58,15 @@ exports.createHandicraft = catchAsync(async (req, res, next) => {
     // Construct the URL for the uploaded file
     const url = `https://storage.googleapis.com/${bucketName}/${filename}`;
 
+    // Create an array of steps from the request body
+    const stepList = steps.split('\n');
+
     // Create a new Handicraft record with the uploaded file URL
     const handicraft = await Handicraft.create({
       name,
       description,
       photo_url: url,
+      steps: stepList,
     });
 
     await handicraft.addTags(tagsItem.map((tag) => tag[0]));

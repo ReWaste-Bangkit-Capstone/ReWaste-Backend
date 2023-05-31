@@ -22,6 +22,10 @@ const Handicraft = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    steps: {
+      type: DataTypes.ARRAY(DataTypes.STRING),
+      allowNull: false,
+    },
   },
   { timestamps: false }
 );
