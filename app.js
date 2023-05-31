@@ -4,13 +4,11 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const xss = require('xss-clean');
 
-// const User = require('./models/userModel');
+const User = require('./models/userModel');
 const userRouter = require('./routes/userRoutes');
 const handicraftRouter = require('./routes/handicraftRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errController');
-const Tag = require('./models/tagModel');
-const Handicraft = require('./models/handicraftModel');
 
 const app = express();
 // global middleware
@@ -54,32 +52,18 @@ app.use('*', (req, res, next) => {
 });
 const sequelize = require('./utils/database');
 
-Handicraft.belongsToMany(Tag, {
-  through: 'TagLists',
-  as: 'tagLists',
-  foreignKey: 'handicraftId',
-  timestamps: false,
-});
-
-Tag.belongsToMany(Handicraft, {
-  through: 'HandicraftTags',
-  uniqueKey: false,
-  timestamps: false,
-});
-
-const sync = async () => await sequelize.sync();
+const sync = async () => await sequelize.sync({ force: true });
 sync().then(() => {
-  // User.create({
-  //   email: 'test@test.com',
-  //   password: '123456',
-  //   name: 'neo ges',
-  // });
-  // User.create({
-  //   email: 'test2@test.com',
-  //   password: '123456',
-  //   name: 'celeb_neo',
-  // });
-  console.log('synced');
+  User.create({
+    email: 'test@test.com',
+    password: '123456',
+    name: 'neo ges',
+  });
+  User.create({
+    email: 'test2@test.com',
+    password: '123456',
+    name: 'celeb_neo',
+  });
 });
 
 app.use(globalErrorHandler);

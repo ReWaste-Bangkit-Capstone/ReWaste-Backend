@@ -2,9 +2,12 @@ const multer = require('multer');
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const { Op } = require('sequelize');
 const catchAsync = require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
 const Handicraft = require('../models/handicraftModel');
+const Tag = require('../models/tagModel');
 const handlerFactory = require('./handlerFactory');
 
 const storage = new Storage({
@@ -21,7 +24,7 @@ const upload = multer({
 exports.uploadHandicraftPhoto = upload.single('photo_url');
 
 exports.createHandicraft = catchAsync(async (req, res, next) => {
-  const { name, description } = req.body;
+  const { name, description, tags } = req.body;
   const { file } = req;
 
   console.log(file);
@@ -39,9 +42,22 @@ exports.createHandicraft = catchAsync(async (req, res, next) => {
     },
   });
   stream.on('error', (err) => {
-    next(err);
+    next(new AppError(err.message, 400));
   });
   stream.on('finish', async () => {
+    // Create an array of tag names from the request body
+    const tagNames = tags.split(',');
+    console.log(tagNames);
+
+    // Find or create the tag records by name
+    const tagsItem = await Promise.all(
+      tagNames.map((tname) =>
+        Tag.findOrCreate({
+          where: { name: tname },
+        })
+      )
+    );
+
     // Construct the URL for the uploaded file
     const url = `https://storage.googleapis.com/${bucketName}/${filename}`;
 
@@ -52,17 +68,68 @@ exports.createHandicraft = catchAsync(async (req, res, next) => {
       photo_url: url,
     });
 
+    await handicraft.addTags(tagsItem.map((tag) => tag[0]));
+
     res.status(201).json({
       status: 'success',
       data: {
         handicraft,
+        tags: tagNames,
       },
     });
   });
   stream.end(file.buffer);
 });
 
+exports.getHandicraftsByTags = catchAsync(async (req, res, next) => {
+  const tagNames = req.query.tags.split(',');
+  const tags = await Tag.findAll({ where: { name: tagNames } });
+  if (tags.length !== tagNames.length) {
+    return res.status(404).json({
+      status: 'fail',
+      message: 'One or more tags not found',
+    });
+  }
+
+  // Find the handicraft records that have the tags
+  const handicrafts = await Handicraft.findAll({
+    include: [
+      {
+        model: Tag,
+        where: { name: { [Op.in]: tagNames } },
+      },
+    ],
+  });
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      handicrafts,
+    },
+  });
+});
+
+exports.deleteAssociatedFile = catchAsync(async (req, res, next) => {
+  const handicraft = await Handicraft.findByPk(req.params.id);
+
+  const filename = handicraft.photo_url.split('/').pop();
+
+  console.log(filename);
+
+  if (!handicraft) {
+    return res.status(404).json({
+      status: 'fail',
+      message: 'Handicraft not found',
+    });
+  }
+
+  // Delete the associated file from Google Cloud Storage
+  const file = storage.bucket('rewaste-bucket-capstone').file(filename);
+  await file.delete();
+  next();
+});
+
+exports.deleteHandicraft = handlerFactory.deleteOne(Handicraft);
 exports.getAllHandicrafts = handlerFactory.getAll(Handicraft);
 exports.getHandicraft = handlerFactory.getOne(Handicraft);
 exports.updateHandicraft = handlerFactory.updateOne(Handicraft);
-exports.deleteHandicraft = handlerFactory.deleteOne(Handicraft);

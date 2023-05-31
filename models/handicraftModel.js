@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../utils/database');
+const Tag = require('./tagModel');
 
 const Handicraft = sequelize.define(
   'Handicraft',
@@ -24,5 +25,8 @@ const Handicraft = sequelize.define(
   },
   { timestamps: false }
 );
+
+Handicraft.belongsToMany(Tag, { through: 'HandicraftTag', as: 'tags' });
+Tag.belongsToMany(Handicraft, { through: 'HandicraftTag', as: 'handicrafts' });
 
 module.exports = Handicraft;

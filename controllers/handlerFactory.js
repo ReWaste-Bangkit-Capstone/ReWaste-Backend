@@ -3,7 +3,11 @@ const AppError = require('../utils/appError');
 
 exports.deleteOne = (Model) =>
   catchAsync(async (req, res, next) => {
-    const doc = await Model.findByIdAndDelete(req.params.id);
+    const doc = await Model.destroy({
+      where: {
+        id: req.params.id,
+      },
+    });
 
     if (!doc) {
       return next(new AppError('No document found with that ID', 404));
@@ -47,7 +51,7 @@ exports.createOne = (Model) =>
 
 exports.getAll = (Model) =>
   catchAsync(async (req, res, next) => {
-    // const docs = await features.query.explain();
+    // Find the handicraft records that have the tags
     const docs = await Model.findAll();
 
     res.status(200).json({
