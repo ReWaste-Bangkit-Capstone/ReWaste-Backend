@@ -4,9 +4,6 @@ const router = express.Router();
 
 const handicraftController = require('../controllers/handicraftController');
 
-// get by tag
-router.route('/tag').get(handicraftController.getHandicraftsByTags);
-
 router
   .route('/')
   .get(handicraftController.getAllHandicrafts)

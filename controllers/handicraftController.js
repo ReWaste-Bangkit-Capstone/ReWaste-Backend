@@ -27,8 +27,6 @@ exports.createHandicraft = catchAsync(async (req, res, next) => {
   const { name, description, tags } = req.body;
   const { file } = req;
 
-  console.log(file);
-
   // Generate a unique filename for the uploaded file
   const filename = `${uuidv4()}${path.extname(file.originalname)}`;
 
@@ -81,34 +79,6 @@ exports.createHandicraft = catchAsync(async (req, res, next) => {
   stream.end(file.buffer);
 });
 
-exports.getHandicraftsByTags = catchAsync(async (req, res, next) => {
-  const tagNames = req.query.tags.split(',');
-  const tags = await Tag.findAll({ where: { name: tagNames } });
-  if (tags.length !== tagNames.length) {
-    return res.status(404).json({
-      status: 'fail',
-      message: 'One or more tags not found',
-    });
-  }
-
-  // Find the handicraft records that have the tags
-  const handicrafts = await Handicraft.findAll({
-    include: [
-      {
-        model: Tag,
-        where: { name: { [Op.in]: tagNames } },
-      },
-    ],
-  });
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      handicrafts,
-    },
-  });
-});
-
 exports.deleteAssociatedFile = catchAsync(async (req, res, next) => {
   const handicraft = await Handicraft.findByPk(req.params.id);
 
@@ -129,7 +99,43 @@ exports.deleteAssociatedFile = catchAsync(async (req, res, next) => {
   next();
 });
 
+exports.getAllHandicrafts = catchAsync(async (req, res, next) => {
+  let handicrafts;
+
+  if (req.query.tags) {
+    const tagNames = req.query.tags.split(',');
+    const tags = await Tag.findAll({ where: { name: tagNames } });
+    if (tags.length !== tagNames.length) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'One or more tags not found',
+      });
+    }
+
+    // Find the handicraft records that have the tags
+    handicrafts = await Handicraft.findAll({
+      include: [
+        {
+          model: Tag,
+          as: 'tags',
+          where: { name: { [Op.in]: tagNames } },
+          through: { attributes: [] },
+        },
+      ],
+    });
+  } else {
+    // Return all handicraft records
+    handicrafts = await Handicraft.findAll();
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      handicrafts,
+    },
+  });
+});
+
 exports.deleteHandicraft = handlerFactory.deleteOne(Handicraft);
-exports.getAllHandicrafts = handlerFactory.getAll(Handicraft);
 exports.getHandicraft = handlerFactory.getOne(Handicraft);
 exports.updateHandicraft = handlerFactory.updateOne(Handicraft);
