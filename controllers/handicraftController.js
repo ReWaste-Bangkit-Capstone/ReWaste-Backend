@@ -9,10 +9,13 @@ const AppError = require('../utils/appError');
 const Handicraft = require('../models/handicraftModel');
 const Tag = require('../models/tagModel');
 const handlerFactory = require('./handlerFactory');
+require('dotenv').config();
+
+const serviceAccount = JSON.parse(process.env.serviceAccountKey);
 
 const storage = new Storage({
   projectId: 'rewaste-220523',
-  keyFilename: 'keyStorage.json',
+  credentials: serviceAccount,
 });
 
 const bucketName = 'rewaste-bucket-capstone';
