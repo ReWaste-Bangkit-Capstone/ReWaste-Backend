@@ -131,14 +131,27 @@ exports.getAllHandicrafts = catchAsync(async (req, res, next) => {
     });
   } else {
     // Return all handicraft records
-    handicrafts = await Handicraft.findAll();
+    handicrafts = await Handicraft.findAll({
+      include: {
+        model: Tag,
+        as: 'tags',
+      },
+    });
   }
+
+  // Extract the tag names from the handicrafts
+  handicrafts = handicrafts.map((handicraft) => {
+    const tagNames = handicraft.tags.map((tag) => tag.name);
+    return {
+      ...handicraft.toJSON(),
+      tags: tagNames,
+    };
+  });
 
   res.status(200).json({
     status: 'success',
-    data: {
-      handicrafts,
-    },
+    results: handicrafts.length,
+    data: handicrafts,
   });
 });
 
@@ -171,6 +184,29 @@ exports.updateFile = catchAsync(async (req, res, next) => {
   next();
 });
 
+exports.getHandicraft = catchAsync(async (req, res, next) => {
+  const handicraft = await Handicraft.findByPk(req.params.id, {
+    include: {
+      model: Tag,
+      as: 'tags',
+      attributes: ['name'],
+      through: { attributes: [] },
+    },
+  });
+
+  if (!handicraft) {
+    return next(new AppError('No document found with that ID', 404));
+  }
+
+  const tagNames = handicraft.tags.map((tag) => tag.name);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      ...handicraft.toJSON(),
+      tags: tagNames,
+    },
+  });
+});
 exports.deleteHandicraft = handlerFactory.deleteOne(Handicraft);
-exports.getHandicraft = handlerFactory.getOne(Handicraft);
 exports.updateHandicraft = handlerFactory.updateOne(Handicraft);
