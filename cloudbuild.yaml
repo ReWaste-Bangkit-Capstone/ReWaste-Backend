@@ -1,23 +1,18 @@
 steps:
-  # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args:
-      ['build', '-t', 'gcr.io/rewaste-220523/rewaste-20230606:$COMMIT_SHA', '.']
-  # Push the container image to Container Registry
+    args: ['build', '-t', 'gcr.io/rewaste-220523/placeholder:latest', '.']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/rewaste-220523/rewaste-20230606:$COMMIT_SHA']
-  # Deploy container image to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
+    args: ['push', 'gcr.io/rewaste-220523/placeholder:latest']
+  - name: 'gcr.io/cloud-builders/gcloud'
     args:
-      - 'run'
-      - 'deploy'
-      - 'rewaste-api'
-      - '--image'
-      - 'gcr.io/rewaste-220523/rewaste-20230606:$COMMIT_SHA'
-      #    delete the line below if you want auth (using gcloud iap)
-      - '--allow-unauthenticated'
-      - '--region'
-      - 'asia-southeast2'
-images:
-  - 'gcr.io/rewaste-220523/rewaste-20230606:$COMMIT_SHA'
+      [
+        'run',
+        'deploy',
+        'rewaste-api',
+        '--image',
+        'gcr.io/rewaste-220523/placeholder:latest',
+        '--platform',
+        'managed',
+        '--region',
+        'us-central1',
+      ]
