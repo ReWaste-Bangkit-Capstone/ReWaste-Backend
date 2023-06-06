@@ -1,0 +1,16 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/rewaste-220523/placeholder:latest', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/rewaste-220523/placeholder:latest']
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      [
+        'run',
+        'deploy',
+        'rewaste-api',
+        '--image',
+        'gcr.io/rewaste-220523/placeholder:latest',
+        '--platform',
+        'managed',
+      ]
