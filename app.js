@@ -3,6 +3,7 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const xss = require('xss-clean');
+const cors = require('cors');
 
 const userRouter = require('./routes/userRoutes');
 const handicraftRouter = require('./routes/handicraftRoutes');
@@ -11,7 +12,7 @@ const globalErrorHandler = require('./controllers/errController');
 
 const app = express();
 // global middleware
-
+app.use(cors());
 // set security http headers
 app.use(helmet());
 
