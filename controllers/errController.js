@@ -1,5 +1,11 @@
 const AppError = require('../utils/appError');
 
+const handleDuplicateFieldsDB = (err) => {
+  const { value } = err.errors[0];
+  const message = `Duplicate field value: ${value}. Please use another Email`;
+  return new AppError(message, 400);
+};
+
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
     status: err.status,
@@ -43,6 +49,8 @@ module.exports = (err, req, res, next) => {
     let error = Object.assign(err);
     if (error.name === 'JsonWebTokenError') error = handleJWTError();
     if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
+    if (error.name === 'SequelizeUniqueConstraintError')
+      error = handleDuplicateFieldsDB(error);
     sendErrorProd(error, res);
   }
 };
