@@ -155,35 +155,6 @@ exports.getAllHandicrafts = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.updateFile = catchAsync(async (req, res, next) => {
-  const { file } = req;
-  if (!file) return next();
-  const filename = `${uuidv4()}${path.extname(file.originalname)}`;
-
-  // Upload the file to Google Cloud Storage
-  const bucket = storage.bucket(bucketName);
-  const blob = bucket.file(filename);
-  const stream = blob.createWriteStream({
-    resumable: false,
-    metadata: {
-      contentType: file.mimetype,
-    },
-  });
-  stream.on('error', (err) => {
-    next(new AppError(err.message, 400));
-  });
-  stream.on('finish', async () => {
-    // Construct the URL for the uploaded file
-    const url = `https://storage.googleapis.com/${bucketName}/${filename}`;
-
-    // Update the handicraft record with the uploaded file URL
-    await Handicraft.findByPk(req.params.id);
-    req.body.photo_url = url;
-  });
-  stream.end(file.buffer);
-  next();
-});
-
 exports.getHandicraft = catchAsync(async (req, res, next) => {
   const handicraft = await Handicraft.findByPk(req.params.id, {
     include: {
@@ -208,5 +179,87 @@ exports.getHandicraft = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.updateHandicraft = catchAsync(async (req, res, next) => {
+  const { name, description, tags, steps } = req.body;
+  const { file } = req;
+
+  // Find the handicraft record by ID
+  const handicraft = await Handicraft.findByPk(req.params.id);
+
+  if (!handicraft) {
+    return next(new AppError('No document found with that ID', 404));
+  }
+
+  // Update the handicraft record with the new data
+  if (name) handicraft.name = name;
+  if (description) handicraft.description = description;
+  if (file) {
+    // Generate a unique filename for the uploaded file
+    const filename = `${uuidv4()}${path.extname(file.originalname)}`;
+
+    // Upload the file to Google Cloud Storage
+    const bucket = storage.bucket(bucketName);
+    const blob = bucket.file(filename);
+    const stream = blob.createWriteStream({
+      resumable: false,
+      metadata: {
+        contentType: file.mimetype,
+      },
+    });
+    stream.on('error', (err) => {
+      next(new AppError(err.message, 400));
+    });
+    stream.on('finish', async () => {
+      // Construct the URL for the uploaded file
+      const url = `https://storage.googleapis.com/${bucketName}/${filename}`;
+
+      // Update the handicraft record with the uploaded file URL
+      handicraft.photo_url = url;
+      await handicraft.save();
+    });
+    stream.end(file.buffer);
+  }
+  if (steps) handicraft.steps = steps.split('\n');
+  await handicraft.save();
+
+  // Update the tags associated with the handicraft
+  if (tags) {
+    // Create an array of tag names from the request body
+    const tagNames = tags.split(',');
+
+    // Find or create the tag records by name
+    const tagsItem = await Promise.all(
+      tagNames.map((tname) =>
+        Tag.findOrCreate({
+          where: { name: tname },
+        })
+      )
+    );
+
+    // Update the handicraft's tags
+    await handicraft.setTags(tagsItem.map((tag) => tag[0]));
+  }
+
+  // Return the updated handicraft record
+  const updatedHandicraft = await Handicraft.findByPk(req.params.id, {
+    include: {
+      model: Tag,
+      as: 'tags',
+      attributes: ['name'],
+      through: { attributes: [] },
+    },
+  });
+
+  const tagNames = updatedHandicraft.tags.map((tag) => tag.name);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      ...updatedHandicraft.toJSON(),
+      tags: tagNames,
+    },
+  });
+});
+
 exports.deleteHandicraft = handlerFactory.deleteOne(Handicraft);
-exports.updateHandicraft = handlerFactory.updateOne(Handicraft);

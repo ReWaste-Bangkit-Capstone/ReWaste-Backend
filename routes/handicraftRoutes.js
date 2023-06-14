@@ -17,7 +17,6 @@ router
   .get(handicraftController.getHandicraft)
   .patch(
     handicraftController.uploadHandicraftPhoto,
-    handicraftController.updateFile,
     handicraftController.updateHandicraft
   )
   .delete(
