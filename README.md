@@ -51,7 +51,7 @@ Follow the steps below to get the backend API up and running:
    npm run dev
    ```
 
-6. The API should now be accessible at http://localhost:3000.
+6. The API should now be accessible at <http://localhost:3000>.
 
 ## Deployment
 
